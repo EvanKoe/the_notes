@@ -15,7 +15,16 @@ type Translations = {
   newNote: string
 };
 
+type DialogData = {
+  title?: string,
+  body: string,
+  yesButton: string,
+  noButton?: string,
+  action?: () => void
+};
+
 export {
   Note,
-  Translations
+  Translations,
+  DialogData
 };

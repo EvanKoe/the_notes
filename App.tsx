@@ -1,20 +1,34 @@
 //! Standard imports
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { AsyncStorage, Dimensions, FlatList, Keyboard, ListRenderItemInfo, StyleSheet, Text, TextInput, Touchable, TouchableOpacity, TouchableWithoutFeedback, View } from 'react-native';
+import {
+  AsyncStorage,
+  Dimensions,
+  FlatList,
+  Keyboard,
+  ListRenderItemInfo,
+  StyleSheet,
+  Text,
+  TextInput,
+  ToastAndroid,
+  TouchableOpacity,
+  View
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 //* Local imports
 import truncate from './Functions/truncate';
 import { eng, fr } from './translations/translations';
-import { Note, Translations } from './Types/types';
+import { DialogData, Note, Translations } from './Types/types';
 
 //? Icons
 import { Feather } from '@expo/vector-icons';
 import { AntDesign } from '@expo/vector-icons';
-import { useRef } from 'react';
+import { FontAwesome5 } from '@expo/vector-icons';
 
-//TODO Patch the useRef problem (see TODO comments)
+//TODO Add languages
+//TODO Add menu with settings
+//TODO Add backend for search bar
 
 const HEIGHT = Dimensions.get('screen').height;
 const WIDTH = Dimensions.get('screen').width;
@@ -25,8 +39,9 @@ export default function App() {
   const [isModalDisplayed, setIfModalDisplayed] = useState<boolean>(false);
   const [lang, setLang] = useState<Translations>(eng);
   const [current, setCurrent] = useState<Note | undefined>(undefined);
-  const _titleRef = useRef<TextInput>();
-  const _bodyRef = useRef<TextInput>();
+  const _titleRef = useRef<TextInput>(null);
+  const _bodyRef = useRef<TextInput>(null);
+  const [dialog, setDialog] = useState<DialogData | undefined>(undefined);
 
   const save = async () => {
     if (current === undefined) {
@@ -34,42 +49,62 @@ export default function App() {
     }
     let i: number = -1;
     let a: Note[] = []
-    notes?.map((item: Note) => {
-      if (item.id === current.id) {
 
+    notes?.map((item: Note) => {
+      console.log('item : ', item.id, ', current : ', current.id);
+      if (item.id === current.id) {
+        i = item.id;
+        notes[i] = current;
+        a = notes;
+        return;
       }
-    })
-    a = notes === undefined ? [current] : notes?.concat([current]);
+    });
+    if (notes === undefined) {
+      a = [current];
+    } else if (i === -1) {
+      a = notes?.concat([current]);
+    }
     await AsyncStorage.setItem('noteStorage', JSON.stringify(a));
     return setNotes(a);
   }
 
   const getItem = (title: string | undefined, body: string | undefined) => {
     return (current === undefined) ? ({
-      id: notes ? notes[notes?.length - 1].id + 1 : 0,
+      // if new note
+      id: notes === undefined || notes.length === 0 ? 0 : notes[notes?.length - 1].id + 1,
       title: title ?? lang.newNote,
       body: body ?? lang.newNote,
       created: new Date(Date.now()),
       lastModified: new Date(Date.now())
     }) : ({
+      // if already saved note
       id: current.id,
       title: title ?? current.title,
       body: body ?? current.body,
       created: current.created,
       lastModified: new Date(Date.now())
     });
-  } 
+  }
+
+  const remove = () => {
+    let a: Note[] | undefined = [];
+    a = notes?.filter((note: Note) => note.id !== current?.id);
+    setNotes(a);
+    setDialog(undefined);
+    setIfModalDisplayed(false);
+    AsyncStorage.setItem('noteStorage', JSON.stringify(a));
+    ToastAndroid.show("Note deleted", ToastAndroid.SHORT);
+  }
 
   useEffect(() => {
     if (isModalDisplayed) {
       return;
     }
-    console.log('Reset current')
     setCurrent(undefined);
   }, [isModalDisplayed]);
 
   useEffect(() => {
-    const fun = async () => { 
+    const fun = async () => {
       const a: string | null = await AsyncStorage.getItem('noteStorage');
 
       setNotes((a === null) ? undefined : JSON.parse(a));
@@ -108,6 +143,7 @@ export default function App() {
         <FlatList
           numColumns={2}
           data={notes}
+          keyExtractor={(item: Note, index: number) => 'note' + index.toString()}
           contentContainerStyle={{ alignItems: 'center' }}
           renderItem={({ item, index }: ListRenderItemInfo<Note>) => (
             <TouchableOpacity
@@ -115,11 +151,6 @@ export default function App() {
               onPress={() => {
                 setCurrent({ ...notes[index] })
                 setIfModalDisplayed(true)
-                if (!_titleRef?.current || !_bodyRef?.current) {
-                  alert(lang.failedSave)
-                }
-                //TODO _titleRef.current.set = notes[index].title
-                //TODO _bodyRef.current.value = notes[index].body
               }}
             >
               <Text style={styles.noteTileTitle}>{ truncate(item.title, 20) }</Text>
@@ -157,29 +188,67 @@ export default function App() {
         >
             <View style={styles.newNoteView}>
               <TextInput
-                //TODO ref={_titleRef}
+                ref={_titleRef}
                 placeholder='Title'
-                placeholderTextColor='#bbb'
+                placeholderTextColor='#4C8EDB77'
                 style={styles.noteTitle}
+                value={current?.title}
                 onChangeText={(e: string) => setCurrent(getItem(e, undefined))}
               />
               <TextInput
-                //TODO ref={_bodyRef}
+                ref={_bodyRef}
                 placeholder='Note'
                 autoFocus={current === undefined}
                 multiline
                 numberOfLines={30}
-                placeholderTextColor='#bbb'
+                placeholderTextColor='#ddd7'
                 style={styles.noteBody}
+                value={current?.body}
                 onChangeText={(e: string) => setCurrent(getItem(undefined, e))}
               />
             </View>
 
             {/* Action bar */}
             <View style={styles.actionBar}>
-              <AntDesign name="save" size={24} color="#ddd" />
+            {/* Delete note button */}
+            <TouchableOpacity
+              onPress={() => setDialog({
+                title: "Remove note",
+                body: "You sure ?",
+                yesButton: "Yes",
+                noButton: "Cancel",
+                action: remove
+              })}
+              style={styles.actionBarButton}
+            >
+              <Feather name="trash" size={24} color="#bbb" />
+            </TouchableOpacity>
+
+            {/* Add tab button */}
+            <View style={styles.actionBarLastModifiedView}>
+              <Text style={{ color: '#bbb', fontSize: 12 }}>Last modified</Text>
+              <Text style={{ color: '#bbb', fontSize: 12 }}>{ current?.lastModified.toDateString() }</Text>
             </View>
+          </View>
         </TouchableOpacity>
+      ) }
+
+      {/* Dialog */}
+      { dialog !== undefined && (
+        <View style={styles.dialog}>
+          <View style={styles.dialogFg}>
+            <Text style={styles.dialogTitle}>{ dialog.title }</Text>
+            <Text style={styles.dialogBody}>{ dialog.body }</Text>
+            <View style={{ flexDirection: 'row', marginTop: 30 }}>
+              <TouchableOpacity onPress={() => setDialog(undefined)} style={styles.dialogNoButton}>
+                <Text style={styles.dialogNoButtonText}>{ dialog.noButton }</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={dialog.action} style={styles.dialogYesButton}>
+                <Text style={styles.dialogYesButtonText}>{ dialog.yesButton }</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       ) }
     </SafeAreaView>
   );
@@ -234,7 +303,7 @@ const styles = StyleSheet.create({
     width: 65,
     position: 'absolute',
     bottom: 20,
-    right: 20,
+    right: 30,
     backgroundColor: '#4C8EDB',
     borderRadius: 20
   },
@@ -272,23 +341,89 @@ const styles = StyleSheet.create({
   },
   noteTitle: {
     color: '#4C8EDB',
-    fontSize: 18,
-    fontWeight: 'bold'
+    fontSize: 22,
+    marginBottom: 10
   },
   noteBody: {
     fontSize: 18,
-    color: '#ddd',
+    color: '#ccc',
     flex: 1,
     textAlignVertical: 'top',
   },
   actionBar: {
+    zindex: 1,
+    height: 50,
+    width: WIDTH - 100,
     position: 'absolute',
     bottom: 50,
-    left: 20,
-    height: 50,
-    width: WIDTH - 50,
+    left: 30,
     backgroundColor: '#3769a3',
     paddingHorizontal: 20,
-    borderRadius: 40
+    flexDirection: 'row',
+    borderRadius: 40,
+    // justifyContent: 'space-around'
+  },
+  actionBarLastModifiedView: {
+    alignItems: 'center',
+    marginLeft: 'auto',
+    marginRight: 'auto',
+    justifyContent: 'center'
+  },
+  actionBarButton: {
+    marginTop: 'auto',
+    marginBottom: 'auto',
+    marginLeft: '5%'
+  },
+  dialog: {
+    zIndex: 3,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    bottom: 0,
+    right: 0,
+    backgroundColor: '#000000bb',
+    paddingTop: HEIGHT / 2 - (HEIGHT / 10),
+    paddingHorizontal: WIDTH / 2 - (WIDTH / 2.5)
+  },
+  dialogFg: {
+    backgroundColor: '#212121',
+    borderRadius: 15,
+    paddingVertical: 10,
+    paddingHorizontal: 30
+  },
+  dialogTitle: {
+    fontSize: 20,
+    color: '#4C8EDB',
+    marginTop: 10
+  },
+  dialogBody: {
+    color: '#bbb',
+    fontSize: 14,
+    marginTop: 10
+  },
+  dialogYesButton: {
+    borderWidth: 2,
+    borderColor: '#b10000',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    marginLeft: 'auto',
+    borderRadius: 10,
+    marginBottom: 10
+  },
+  dialogNoButton: {
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#4C8EDB',
+    paddingVertical: 10,
+    paddingHorizontal: 30,
+    marginBottom: 10
+  },
+  dialogNoButtonText: {
+    color: '#4C8EDB',
+    fontSize: 16
+  },
+  dialogYesButtonText: {
+    color: '#B10000',
+    fontSize: 16
   }
 });
