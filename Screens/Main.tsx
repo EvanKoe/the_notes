@@ -16,15 +16,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-//* Local imports
-import truncate from './Functions/truncate';
-import { eng, fr } from './translations/translations';
-import { DialogData, Note, Translations } from './Types/types';
-
 //? Icons
 import { Feather } from '@expo/vector-icons';
 import { AntDesign } from '@expo/vector-icons';
-import { FontAwesome5 } from '@expo/vector-icons';
+import { DialogData, Note, Translations } from '../Types/types';
+import { eng, fr } from '../translations/translations';
+import { STORAGE_KEY } from '../globals';
+import truncate from '../Functions/truncate';
 
 //TODO Add languages
 //TODO Add menu with settings
@@ -33,7 +31,7 @@ import { FontAwesome5 } from '@expo/vector-icons';
 const HEIGHT = Dimensions.get('screen').height;
 const WIDTH = Dimensions.get('screen').width;
 
-export default function App() {
+const Main = ({ navigation }: any) => {
   const [searchValue, setSearchValue] = useState<string | undefined>(undefined);
   const [notes, setNotes] = useState<Note[] | undefined>(undefined);
   const [isModalDisplayed, setIfModalDisplayed] = useState<boolean>(false);
@@ -51,7 +49,6 @@ export default function App() {
     let a: Note[] = []
 
     notes?.map((item: Note) => {
-      console.log('item : ', item.id, ', current : ', current.id);
       if (item.id === current.id) {
         i = item.id;
         notes[i] = current;
@@ -64,7 +61,7 @@ export default function App() {
     } else if (i === -1) {
       a = notes?.concat([current]);
     }
-    await AsyncStorage.setItem('noteStorage', JSON.stringify(a));
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(a));
     return setNotes(a);
   }
 
@@ -92,8 +89,8 @@ export default function App() {
     setNotes(a);
     setDialog(undefined);
     setIfModalDisplayed(false);
-    AsyncStorage.setItem('noteStorage', JSON.stringify(a));
-    ToastAndroid.show("Note deleted", ToastAndroid.SHORT);
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(a));
+    ToastAndroid.show(lang.deleted, ToastAndroid.SHORT);
   }
 
   useEffect(() => {
@@ -105,7 +102,7 @@ export default function App() {
 
   useEffect(() => {
     const fun = async () => {
-      const a: string | null = await AsyncStorage.getItem('noteStorage');
+      const a: string | null = await AsyncStorage.getItem(STORAGE_KEY);
 
       setNotes((a === null) ? undefined : JSON.parse(a));
     };
@@ -119,7 +116,7 @@ export default function App() {
       {/* Search bar */}
       <View style={styles.searchBar}>
         <TouchableOpacity
-          onPress={() => alert('Menu will be released soon')}
+          onPress={() => navigation.navigate('settings')}
         >
           <Feather
             name="menu"
@@ -427,3 +424,5 @@ const styles = StyleSheet.create({
     fontSize: 16
   }
 });
+
+export default Main;

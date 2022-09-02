@@ -12,7 +12,11 @@ type Translations = {
   searchBar: string,
   emptyNotes: string,
   failedSave: string,
-  newNote: string
+  newNote: string,
+  deleted: string,
+  settingsTitle: string,
+  settingsLang: string,
+  error: string
 };
 
 type DialogData = {
@@ -23,8 +27,13 @@ type DialogData = {
   action?: () => void
 };
 
+type SettingsStorage = {
+  language: Translations
+};
+
 export {
   Note,
   Translations,
-  DialogData
+  DialogData,
+  SettingsStorage
 };
