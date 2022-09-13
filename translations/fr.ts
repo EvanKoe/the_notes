@@ -8,7 +8,15 @@ const fr: Translations = {
   deleted: "Note supprimée",
   settingsTitle: "Paramètres",
   settingsLang: "Langue",
-  error: "Erreur. Veuillez rééssayer ultérieurement"
+  error: "Erreur. Veuillez rééssayer ultérieurement",
+  removeNoteTitle: "Supprimer ?",
+  removeNoteBody: "Êtes-vous sûr de vouloir supprimer cette note ?",
+  removeNoteYes: "Oui",
+  removeNoteNo: "Annuler",
+  noteTitle: 'Titre',
+  noteBody: "Notez ici",
+  lastModified: "Dernière modification",
+  noData: "Pas de données"
 };
 
 export default fr;

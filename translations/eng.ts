@@ -8,7 +8,15 @@ const eng: Translations = {
   deleted: "Note deleted",
   settingsTitle: "Settings",
   settingsLang: "Language",
-  error: "Error. Try again later"
+  error: "Error. Try again later",
+  removeNoteTitle: "Remove note ?",
+  removeNoteBody: "Are you sure you want to remove this note ?",
+  removeNoteYes: "Yes",
+  removeNoteNo: "Cancel",
+  noteTitle: "Title",
+  noteBody: "Type here",
+  lastModified: "Last modified",
+  noData: "Couldn't get data"
 };
 
 export default eng;

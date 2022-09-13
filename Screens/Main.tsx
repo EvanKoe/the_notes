@@ -21,7 +21,7 @@ import { Feather } from '@expo/vector-icons';
 import { AntDesign } from '@expo/vector-icons';
 import { DialogData, Note, Translations } from '../Types/types';
 import { eng, fr } from '../translations/translations';
-import { STORAGE_KEY } from '../globals';
+import { STORAGE_KEY, SETTINGS_KEY } from '../globals';
 import truncate from '../Functions/truncate';
 
 //TODO Add languages
@@ -102,10 +102,16 @@ const Main = ({ navigation }: any) => {
 
   useEffect(() => {
     const fun = async () => {
-      const a: string | null = await AsyncStorage.getItem(STORAGE_KEY);
-
-      setNotes((a === null) ? undefined : JSON.parse(a));
+      AsyncStorage.getItem(STORAGE_KEY).then((promise) => {
+        setNotes((promise === null) ? undefined : JSON.parse(promise));
+      });
     };
+
+    AsyncStorage.getItem(SETTINGS_KEY).then((promise) => {
+      console.log(promise ? JSON.parse(promise).language : "null")
+      setLang(promise === null ? eng : JSON.parse(promise).language);
+    });
+
     fun();
   }, []);
 
@@ -126,7 +132,7 @@ const Main = ({ navigation }: any) => {
           />
         </TouchableOpacity>
         <TextInput
-          placeholder='Search notes'
+          placeholder={lang.searchBar}
           placeholderTextColor='#bbb'
           onChangeText={(e) => setSearchValue(e)}
           style={styles.searchInput}
@@ -134,7 +140,7 @@ const Main = ({ navigation }: any) => {
       </View>
 
       {/* Displaying notes */}
-      { notes === undefined ? (
+      {notes === undefined ? (
         <Text style={styles.emptyNotesText}>This looks empty !</Text>
       ) : (
         <FlatList
@@ -150,8 +156,8 @@ const Main = ({ navigation }: any) => {
                 setIfModalDisplayed(true)
               }}
             >
-              <Text style={styles.noteTileTitle}>{ truncate(item.title, 20) }</Text>
-              <Text style={styles.noteTileBody}>{ truncate(item.body, 20) }</Text>
+              <Text style={styles.noteTileTitle}>{truncate(item.title, 20)}</Text>
+              <Text style={styles.noteTileBody}>{truncate(item.body, 20)}</Text>
             </TouchableOpacity>
           )}
         />
@@ -169,7 +175,7 @@ const Main = ({ navigation }: any) => {
         }}
       >
         <AntDesign
-          name={ !isModalDisplayed ? "plus" : current === undefined ? "close" : "save" }
+          name={!isModalDisplayed ? "plus" : current === undefined ? "close" : "save"}
           size={30}
           color="#ddd"
           style={styles.floatingButtonIcon}
@@ -177,43 +183,43 @@ const Main = ({ navigation }: any) => {
       </TouchableOpacity>
 
       {/* Modal new note */}
-      { isModalDisplayed && (
+      {isModalDisplayed && (
         <TouchableOpacity
           activeOpacity={1}
           onPress={() => Keyboard.dismiss()}
           style={styles.newNoteBg}
         >
-            <View style={styles.newNoteView}>
-              <TextInput
-                ref={_titleRef}
-                placeholder='Title'
-                placeholderTextColor='#4C8EDB77'
-                style={styles.noteTitle}
-                value={current?.title}
-                onChangeText={(e: string) => setCurrent(getItem(e, undefined))}
-              />
-              <TextInput
-                ref={_bodyRef}
-                placeholder='Note'
-                autoFocus={current === undefined}
-                multiline
-                numberOfLines={30}
-                placeholderTextColor='#ddd7'
-                style={styles.noteBody}
-                value={current?.body}
-                onChangeText={(e: string) => setCurrent(getItem(undefined, e))}
-              />
-            </View>
+          <View style={styles.newNoteView}>
+            <TextInput
+              ref={_titleRef}
+              placeholder={lang.noteTitle}
+              placeholderTextColor='#4C8EDB77'
+              style={styles.noteTitle}
+              value={current?.title}
+              onChangeText={(e: string) => setCurrent(getItem(e, undefined))}
+            />
+            <TextInput
+              ref={_bodyRef}
+              placeholder={lang.noteBody}
+              autoFocus={current === undefined}
+              multiline
+              numberOfLines={30}
+              placeholderTextColor='#ddd7'
+              style={styles.noteBody}
+              value={current?.body}
+              onChangeText={(e: string) => setCurrent(getItem(undefined, e))}
+            />
+          </View>
 
-            {/* Action bar */}
-            <View style={styles.actionBar}>
+          {/* Action bar */}
+          <View style={styles.actionBar}>
             {/* Delete note button */}
             <TouchableOpacity
               onPress={() => setDialog({
-                title: "Remove note",
-                body: "You sure ?",
-                yesButton: "Yes",
-                noButton: "Cancel",
+                title: lang.removeNoteTitle,
+                body: lang.removeNoteBody,
+                yesButton: lang.removeNoteYes,
+                noButton: lang.removeNoteNo,
                 action: remove
               })}
               style={styles.actionBarButton}
@@ -223,30 +229,30 @@ const Main = ({ navigation }: any) => {
 
             {/* Add tab button */}
             <View style={styles.actionBarLastModifiedView}>
-              <Text style={{ color: '#bbb', fontSize: 12 }}>Last modified</Text>
-              <Text style={{ color: '#bbb', fontSize: 12 }}>{ current?.lastModified.toDateString() }</Text>
+              <Text style={{ color: '#bbb', fontSize: 12 }}>{lang.lastModified}</Text>
+              <Text style={{ color: '#bbb', fontSize: 12 }}>{/*current?.lastModified.toDateString() ?? */lang.noData}</Text>
             </View>
           </View>
         </TouchableOpacity>
-      ) }
+      )}
 
       {/* Dialog */}
-      { dialog !== undefined && (
+      {dialog !== undefined && (
         <View style={styles.dialog}>
           <View style={styles.dialogFg}>
-            <Text style={styles.dialogTitle}>{ dialog.title }</Text>
-            <Text style={styles.dialogBody}>{ dialog.body }</Text>
+            <Text style={styles.dialogTitle}>{dialog.title}</Text>
+            <Text style={styles.dialogBody}>{dialog.body}</Text>
             <View style={{ flexDirection: 'row', marginTop: 30 }}>
               <TouchableOpacity onPress={() => setDialog(undefined)} style={styles.dialogNoButton}>
-                <Text style={styles.dialogNoButtonText}>{ dialog.noButton }</Text>
+                <Text style={styles.dialogNoButtonText}>{dialog.noButton}</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={dialog.action} style={styles.dialogYesButton}>
-                <Text style={styles.dialogYesButtonText}>{ dialog.yesButton }</Text>
+                <Text style={styles.dialogYesButtonText}>{dialog.yesButton}</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
-      ) }
+      )}
     </SafeAreaView>
   );
 }

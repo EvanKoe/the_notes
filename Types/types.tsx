@@ -1,7 +1,7 @@
 import React from 'react';
 
 type Note = {
-  id : number;
+  id: number;
   title: string;
   body: string;
   created: Date;
@@ -16,7 +16,15 @@ type Translations = {
   deleted: string,
   settingsTitle: string,
   settingsLang: string,
-  error: string
+  error: string,
+  removeNoteTitle: string,
+  removeNoteBody: string,
+  removeNoteYes: string,
+  removeNoteNo: string,
+  noteTitle: string,
+  noteBody: string,
+  lastModified: string,
+  noData: string
 };
 
 type DialogData = {
