@@ -3,37 +3,44 @@ import React, { useEffect, useState } from 'react';
 import { AsyncStorage, StyleSheet, Text, View, Image, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { SETTINGS_KEY } from '../globals';
+import { SETTINGS_KEY, STORAGE_KEY } from '../globals';
 import { eng, fr, langToText } from '../translations/translations';
 import { SettingsStorage, Translations } from '../Types/types';
 
 const Settings = ({ navigation }: any) => {
-  const [lang, setLang] = useState<Translations>(eng);
+  const [lang, setLang] = useState<Translations>(fr);
   const [isModal, setIfModal] = useState<boolean>(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(SETTINGS_KEY).then((promise) => {
-      console.log(promise === null ? "promise null" : "");
+    const fun = async () => {
+      const promise = await AsyncStorage.getItem(SETTINGS_KEY);
       if (promise === null) {
-        return console.log('Null settings');
+        return console.log('Promise null');
       }
-      let a = JSON.parse(promise);
-      console.log(langToText(a.language));
-      setLang(a.language);
-    });
+      let a: SettingsStorage = JSON.parse(promise);
+      console.log({ ...(a.language) });
+      setLang({ ...(a.language) });
+      console.log(lang);
+    }
+    fun();
   }, []);
 
-  const onPressLang = (l: Translations) => {
-    AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify({ language: l }));
+  const onPressLang = async (l: Translations) => {
+    await AsyncStorage.setItem(SETTINGS_KEY, JSON.stringify({ language: l }));
     setIfModal(false);
     setLang(l);
+    console.log("successfully ")
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <ExpoStatusBar style="light" />
       <TouchableOpacity
-        onPress={() => navigation.navigate('main')}
+        onPress={async () => {
+          console.log(langToText(lang))
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({ language: lang }))
+          return navigation.navigate('main')
+        }}
         style={{ marginTop: 30 }}
       >
         <Ionicons name="arrow-back-outline" size={24} color='#ddd' />

@@ -20,7 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Feather } from '@expo/vector-icons';
 import { AntDesign } from '@expo/vector-icons';
 import { DialogData, Note, Translations } from '../Types/types';
-import { eng, fr } from '../translations/translations';
+import { eng, fr, langToText } from '../translations/translations';
 import { STORAGE_KEY, SETTINGS_KEY } from '../globals';
 import truncate from '../Functions/truncate';
 
@@ -33,7 +33,7 @@ const WIDTH = Dimensions.get('screen').width;
 
 const Main = ({ navigation }: any) => {
   const [searchValue, setSearchValue] = useState<string | undefined>(undefined);
-  const [notes, setNotes] = useState<Note[] | undefined>(undefined);
+  const [notes, setNotes] = useState<Note[] | undefined>([]);
   const [isModalDisplayed, setIfModalDisplayed] = useState<boolean>(false);
   const [lang, setLang] = useState<Translations>(eng);
   const [current, setCurrent] = useState<Note | undefined>(undefined);
@@ -68,7 +68,7 @@ const Main = ({ navigation }: any) => {
   const getItem = (title: string | undefined, body: string | undefined) => {
     return (current === undefined) ? ({
       // if new note
-      id: notes === undefined || notes.length === 0 ? 0 : notes[notes?.length - 1].id + 1,
+      id: notes === undefined || notes?.length === 0 ? 0 : notes[notes?.length - 1].id + 1,
       title: title ?? lang.newNote,
       body: body ?? lang.newNote,
       created: new Date(Date.now()),
@@ -102,15 +102,19 @@ const Main = ({ navigation }: any) => {
 
   useEffect(() => {
     const fun = async () => {
-      AsyncStorage.getItem(STORAGE_KEY).then((promise) => {
-        setNotes((promise === null) ? undefined : JSON.parse(promise));
-      });
-    };
+      const promise = await AsyncStorage.getItem(STORAGE_KEY);
+      setNotes((promise === null) ? [] : JSON.parse(promise));
+      console.log(notes)
 
-    AsyncStorage.getItem(SETTINGS_KEY).then((promise) => {
-      console.log(promise ? JSON.parse(promise).language : "null")
-      setLang(promise === null ? eng : JSON.parse(promise).language);
-    });
+      const promise2 = await AsyncStorage.getItem(SETTINGS_KEY);
+      if (promise2 === null) {
+        return console.log("pute")
+      }
+      const json = JSON.parse(promise2).language;
+      setLang({ ...json });
+      console.log(json.deleted)
+      console.log(lang.deleted)
+    };
 
     fun();
   }, []);
@@ -119,6 +123,11 @@ const Main = ({ navigation }: any) => {
     <SafeAreaView style={styles.container}>
       <StatusBar style="light" />
 
+      <TouchableOpacity onPress={async () => {
+        setNotes([]);
+        await AsyncStorage.clear();
+      }}>
+        <Text>Pute</Text></TouchableOpacity>
       {/* Search bar */}
       <View style={styles.searchBar}>
         <TouchableOpacity
@@ -140,7 +149,7 @@ const Main = ({ navigation }: any) => {
       </View>
 
       {/* Displaying notes */}
-      {notes === undefined ? (
+      {notes === undefined || notes?.length === 0 ? (
         <Text style={styles.emptyNotesText}>This looks empty !</Text>
       ) : (
         <FlatList
